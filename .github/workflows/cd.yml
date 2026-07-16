@@ -1,0 +1,24 @@
+name: CD - Deploy to Cloud VM
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            rm -rf ~/backend-cloud
+            git clone https://github.com/revengy10/backend-cloud.git ~/backend-cloud
+            cd ~/backend-cloud
+            docker stop robomunch-backend || true
+            docker rm robomunch-backend || true
+            docker build -t backend-cloud:latest .
+            docker run -d --name robomunch-backend --restart unless-stopped -p 8000:8000 backend-cloud:latest
+            docker ps
